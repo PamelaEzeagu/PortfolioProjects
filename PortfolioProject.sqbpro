@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:/Users/user/Downloads/PortfolioProject.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="200"/><column_width id="3" width="16919"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/><expanded_item id="4" parent="1"/></tab_structure><tab_browse><current_table name="4,11:mainCovidDeaths"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="Portfolio Project.sql">--Select the data we are going to be making use of--
+SELECT
+date,
+location,
+continent,
+total_cases,
+new_cases,
+total_deaths,
+population
+FROM
+CovidDeaths
+where continent is not null
+ORDER BY
+1,2
+
+--Looking at Total cases vs. Total deaths
+SELECT
+date,
+location,
+continent,
+total_cases,
+total_deaths,
+100.0*total_deaths/ nullif (total_cases,0)as Death_percentage
+FROM
+CovidDeaths
+where continent is not null
+ORDER BY
+2
+
+--Looking at death percentage in Nigeria(where I'm from), which shows the chance of a person dying if they were to get COVID
+SELECT
+date,
+location,
+continent,
+total_cases,
+total_deaths,
+100.0*total_deaths/ nullif (total_cases,0)as Death_percentage
+FROM
+CovidDeaths
+WHERE location = 'Nigeria'
+and continent is not null
+ORDER BY
+2
+--Looking at Total cases vs. Population. Showing what % of population has gotten Covid
+SELECT
+date,
+location,
+continent,
+total_cases,
+population,
+100.0*total_cases/ nullif (population,0)as CovidCasesPercentage
+FROM
+CovidDeaths
+WHERE location = 'Nigeria'
+and continent is not null
+ORDER BY
+2
+
+--Looking at countries with highest cases compared to population
+SELECT
+location,
+continent,
+population,
+max(total_cases) as HighestInfectionRate,
+100.0*max(total_cases)/ nullif (population,0) as PercentageofPopulationInfected
+FROM
+CovidDeaths
+where continent is not null
+GROUP BY
+location, population
+ORDER BY
+PercentageofPopulationInfected DESC
+
+
+--Looking at death count per population
+SELECT
+location,
+continent,
+max(cast(total_deaths as INT)) as TotalDeathCount
+FROM
+CovidDeaths
+where continent is not null
+GROUP BY location
+ORDER BY TotalDeathCount DESC
+
+--Looking at death count in Nigeria
+SELECT
+location,
+continent,
+max(cast(total_deaths as INT)) as TotalDeathCount
+FROM
+CovidDeaths
+where location= 'Nigeria'
+and continent is not NULL
+GROUP BY location
+ORDER BY TotalDeathCount DESC
+
+--breaking down by continents
+--Looking at continents with the highest death count per population
+SELECT
+continent,
+max(cast(total_deaths as INT)) as TotalDeathCount
+FROM
+CovidDeaths
+where continent is not NULL
+GROUP BY continent
+ORDER BY TotalDeathCount DESC
+
+--Looking at the death percentage globally
+SELECT
+date,
+SUM(new_cases)AS total_cases,
+SUM(cast (new_deaths as INT))as total_deaths,
+100.0*SUM(cast (new_deaths as INT))/ SUM(new_cases)AS DeathPercentage
+FROM
+CovidDeaths
+WHERE continent is not NULL
+GROUP BY 
+date
+ORDER BY 
+DeathPercentage DESC
+
+--Looking Total Cases across the world
+SELECT
+SUM(new_cases)AS total_cases,
+SUM(cast (new_deaths as INT))as total_deaths,
+100.0*SUM(cast (new_deaths as INT))/ SUM(new_cases)AS DeathPercentage
+FROM
+CovidDeaths
+WHERE continent is not NULL
+ORDER BY 
+DeathPercentage DESC
+
+--Joining CovidDeaths table and CovidVaccinations TABLE
+SELECT *
+FROM
+CovidDeaths dea
+JOIN CovidVaccinations vac
+  ON 
+ dea.location= vac.location and
+ dea.date= vac.date
+ 
+ --Looking at Total Vaccinations globally
+ SELECT 
+dea.continent,
+dea.location,
+dea.date,
+dea.population,
+vac.new_vaccinations
+FROM  
+CovidDeaths dea
+JOIN CovidVaccinations vac
+  ON 
+ dea.location= vac.location and
+ dea.date= vac.date
+ where dea.continent is not null
+ORDER BY
+1,2,3
+
+--Looking at Rolling Count of People Vaccinated
+ SELECT 
+dea.continent,
+dea.location,
+dea.date,
+dea.population,
+vac.new_vaccinations,
+SUM(CAST(vac.new_vaccinations as INT)) OVER (PARTITION BY dea.location order by dea.location, dea.date)as RollingCountPeopleVaccinated
+FROM  
+CovidDeaths dea
+JOIN CovidVaccinations vac
+  ON 
+ dea.location= vac.location and
+ dea.date= vac.date
+ where dea.continent is not null
+ORDER BY
+1,2,3
+
+--Looking at % of population vaccinated in each location applying a CTE
+
+--CTE
+With Popvsvac (location,continent,date,population,new_vaccinations,RollingCountPeopleVaccinated) 
+as
+(
+SELECT
+dea.location,
+dea.continent,
+dea.date,
+dea.population,
+vac.new_vaccinations,
+SUM(CAST(vac.new_vaccinations as INT)) OVER (PARTITION BY dea.location order by dea.location, dea.date)as RollingCountPeopleVaccinated
+FROM
+CovidDeaths dea
+JOIN CovidVaccinations vac
+ ON 
+ dea.location=vac.location 
+ and dea.date=vac.date
+ where dea.continent is not NULL
+ )
+ SELECT*,
+ 100.0* RollingCountPeopleVaccinated/ population as PercentageVaccinated
+ FROM
+ Popvsvac
+ 
+ --Creating a TEMP TABLE
+ 
+ DROP TABLE if exists temp.PercentPopulationVaccinated0
+ CREATE TABLE temp.PercentPopulationVaccinated0
+ (
+ continent TEXT,
+ location TEXT,
+ date datetime,
+ population INT,
+ new_vaccinations INT,
+ RollingCountPeopleVaccinated INT
+ )
+INSERT INTO 
+SELECT
+dea.location,
+dea.continent,
+dea.date,
+dea.population,
+vac.new_vaccinations,
+SUM(CAST(vac.new_vaccinations as INT)) OVER (PARTITION BY dea.location order by dea.location, dea.date)as RollingCountPeopleVaccinated
+FROM
+CovidDeaths dea
+JOIN CovidVaccinations vac
+ ON 
+ dea.location=vac.location 
+ and dea.date=vac.date
+ where dea.continent is not NULL
+ 
+SELECT*,  100.0* RollingCountPeopleVaccinated/ population as PercentageVaccinated
+ FROM
+  PercentPopulationVaccinated0
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
