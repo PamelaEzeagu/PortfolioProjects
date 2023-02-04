@@ -7,6 +7,7 @@ The SQL project includes the following:
 
 SQL scripts used to extract, transform, and load data from various sources into a database
 Queries used to analyze the data and generate meaningful insights
+
 A report summarizing the findings of the analysis
 Power BI Project
 
@@ -19,7 +20,9 @@ Clone the repository using the following command:
 
 git clone https://github.com/PamelaEzeagu/portfolio-data-analyst.git
 Open the SQL scripts in SQL Server Management Studio or any other SQL client to run the queries and view the results.
+
 Open the Power BI report in Power BI Desktop to view and interact with the dashboard.
+
 Contributions
 Contributions are welcome! Please feel free to suggest changes or improvements by opening a pull request.
 
