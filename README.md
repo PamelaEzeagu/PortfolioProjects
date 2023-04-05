@@ -1,6 +1,10 @@
 # PortfolioProjects
 This is a portfolio project showcasing my skills and achievements as a Data Analyst. 
-The repository contains SQL and a Power BI projects that demonstrate my ability to work with data and extract insights from it.
+The repository contains Python, SQL and a Power BI projects that demonstrate my ability to work with data and extract insights from it.
+
+Python Project
+The python project includes data cleanng and transformation, correlation, linear regression and cluster analysis
+
 
 SQL Project
 The SQL project includes the following:
